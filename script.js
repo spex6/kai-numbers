@@ -1,4 +1,4 @@
-const SCALE = 20;
+const SCALE = 24;
 
 const state = { hundreds: 0, tens: 0, units: 0 };
 let animating = false;
@@ -723,7 +723,7 @@ document.getElementById("done-write").addEventListener("click", function () {
 });
 
 // ================= WRITE MODE: SUMMON BLOCKS =================
-const WRITE_SCALE = 16; // 80% of build's 20
+const WRITE_SCALE = 19; // 80% of build's 20
 
 function makeUnitW() {
   const b = document.createElement("div");
