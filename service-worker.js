@@ -1,4 +1,4 @@
-const CACHE_NAME = "kai-numbers-v1";
+const CACHE_NAME = "kai-numbers-v2";
 
 const FILES_TO_CACHE = [
   "./",
