@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Kai's Numbers</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#cdeef1">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+
+    <!-- MENU SCREEN -->
+    <div class="screen active" id="screen-menu">
+      <div class="menu">
+        <h1 class="menu-title" id="menu-title">Kai's Numberblocks</h1>
+        <div class="menu-grid">
+
+          <button class="mode-tile" id="tile-build">
+            <div class="tile-image">
+              <img src="images/mode1_tile.png" alt="Build">
+            </div>
+            <div class="tile-label">Build</div>
+          </button>
+
+          <button class="mode-tile" id="tile-write">
+            <div class="tile-image tile-placeholder">✏️</div>
+            <div class="tile-label">Write</div>
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE 1 SCREEN -->
+    <div class="screen" id="screen-mode1">
+    <div class="app">
+      <button class="back-btn" id="back-mode1" aria-label="Back to menu">←</button>
+      <button class="reset-btn" id="reset-mode1" aria-label="Reset">
+        <span class="reset-fill"></span>
+        <span class="reset-icon">Reset</span>
+      </button>
+
+      <div class="columns">
+
+        <div class="column column-hundreds">
+          <div class="mirror-row">
+            <div class="looking-block" id="look-hundreds"></div>
+            <div class="mirror-wrap">
+              <img class="mirror-img" src="images/mirror.png" alt="magic mirror">
+              <div class="mirror-reflection" id="reflect-hundreds"></div>
+            </div>
+            <div class="plus-minus">
+              <button class="btn-plus">+</button>
+              <button class="btn-minus">-</button>
+            </div>
+          </div>
+          <div class="column-stage"></div>
+          <div class="column-label">Hundreds</div>
+          <div class="column-count">0</div>
+        </div>
+
+        <div class="column column-tens">
+          <div class="mirror-row">
+            <div class="looking-block" id="look-tens"></div>
+            <div class="mirror-wrap">
+              <img class="mirror-img" src="images/mirror.png" alt="magic mirror">
+              <div class="mirror-reflection" id="reflect-tens"></div>
+            </div>
+            <div class="plus-minus">
+              <button class="btn-plus">+</button>
+              <button class="btn-minus">-</button>
+            </div>
+          </div>
+          <div class="column-stage"></div>
+          <div class="column-label">Tens</div>
+          <div class="column-count">0</div>
+        </div>
+
+        <div class="column column-units">
+          <div class="mirror-row">
+            <div class="looking-block" id="look-units"></div>
+            <div class="mirror-wrap">
+              <img class="mirror-img" src="images/mirror.png" alt="magic mirror">
+              <div class="mirror-reflection" id="reflect-units"></div>
+            </div>
+            <div class="plus-minus">
+              <button class="btn-plus">+</button>
+              <button class="btn-minus">-</button>
+            </div>
+          </div>
+          <div class="column-stage"></div>
+          <div class="column-label">Units</div>
+          <div class="column-count">0</div>
+        </div>
+
+      </div>
+
+      <div class="number-readout">0</div>
+
+    </div>
+    </div>
+    <!-- end mode 1 screen -->
+
+    <!-- WRITE SCREEN -->
+    <div class="screen" id="screen-write">
+    <div class="app">
+      <button class="back-btn" id="back-write" aria-label="Back to menu">←</button>
+      <button class="toggle-btn" id="toggle-write">Guided</button>
+      <button class="reset-btn" id="clear-write" aria-label="Clear">
+        <span class="reset-fill"></span>
+        <span class="reset-icon">Clear</span>
+      </button>
+      <button class="done-btn" id="done-write">Done!</button>
+
+      <div class="columns">
+        <div class="column column-hundreds">
+          <div class="column-stage"></div>
+          <div class="column-label">Hundreds</div>
+          <div class="column-count">0</div>
+        </div>
+        <div class="column column-tens">
+          <div class="column-stage"></div>
+          <div class="column-label">Tens</div>
+          <div class="column-count">0</div>
+        </div>
+        <div class="column column-units">
+          <div class="column-stage"></div>
+          <div class="column-label">Units</div>
+          <div class="column-count">0</div>
+        </div>
+      </div>
+
+      <div class="write-area">
+        <div class="digit-arrows-row">
+          <div class="arrow-pair">
+            <button class="digit-arrow up" data-place="hundreds">▲</button>
+            <button class="digit-arrow down" data-place="hundreds">▼</button>
+          </div>
+          <div class="arrow-pair">
+            <button class="digit-arrow up" data-place="tens">▲</button>
+            <button class="digit-arrow down" data-place="tens">▼</button>
+          </div>
+          <div class="arrow-pair">
+            <button class="digit-arrow up" data-place="units">▲</button>
+            <button class="digit-arrow down" data-place="units">▼</button>
+          </div>
+        </div>
+        <div class="write-canvas-wrap">
+          <canvas id="write-canvas"></canvas>
+        </div>
+      </div>
+
+    </div>
+    </div>
+    <!-- end write screen -->
+
+    <div id="too-big-message">Woah, that Numberblock is too big for this game!</div>
+
+    <script src="tf.min.js"></script>>
+    <script src="script.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("service-worker.js");
+        });
+      }
+    </script>
+  </body>
+</html>
