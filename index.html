@@ -28,6 +28,11 @@
             <div class="tile-label">Write</div>
           </button>
 
+          <button class="mode-tile" id="tile-mode3">
+            <div class="tile-image tile-placeholder">➕</div>
+            <div class="tile-label">Add</div>
+          </button>
+
         </div>
       </div>
     </div>
@@ -154,6 +159,78 @@
     </div>
     </div>
     <!-- end write screen -->
+
+        </div>
+    </div>
+    <!-- end write screen -->
+
+    <!-- MODE 3 SCREEN (ADDITION) -->
+    <div class="screen" id="screen-mode3">
+    <div class="app mode3-app">
+      <button class="back-btn" id="back-mode3" aria-label="Back to menu">←</button>
+
+      <div class="mode3-top">
+        <div class="mode3-sentence" id="mode3-sentence">36 + 58</div>
+        <button class="mode3-toggle" id="mode3-toggle" aria-label="Number size">
+          <span class="mode3-toggle-knob"></span>
+          <span class="mode3-toggle-label lbl-two">99</span>
+          <span class="mode3-toggle-label lbl-three">999</span>
+        </button>
+      </div>
+      <button class="mode3-shuffle" id="mode3-shuffle" aria-label="New problem">
+        <span class="reset-fill"></span>
+        <span class="reset-icon">🎲</span>
+      </button>
+      
+      <div class="mode3-row">
+
+        <div class="mode3-group" id="mode3-group-left">
+          <div class="columns mode3-columns">
+            <div class="column column-hundreds">
+              <div class="column-stage"></div>
+            </div>
+            <div class="column column-tens">
+              <div class="column-stage"></div>
+            </div>
+            <div class="column column-units">
+              <div class="column-stage"></div>
+            </div>
+          </div>
+          <div class="mode3-numeral" id="mode3-numeral-left">36</div>
+        </div>
+
+        <div class="mode3-middle">
+          <div class="mode3-plus">+</div>
+          <button class="mode3-swap" id="mode3-swap" aria-label="Swap sides">⇄</button>
+        </div>
+
+        <div class="mode3-group" id="mode3-group-right">
+          <div class="columns mode3-columns">
+            <div class="column column-hundreds">
+              <div class="column-stage"></div>
+            </div>
+            <div class="column column-tens">
+              <div class="column-stage"></div>
+            </div>
+            <div class="column column-units">
+              <div class="column-stage"></div>
+            </div>
+          </div>
+          <div class="mode3-numeral" id="mode3-numeral-right">58</div>
+        </div>
+
+      </div>
+
+      <button class="mode3-putback" id="mode3-putback">
+        <span class="reset-fill"></span>
+        <span class="reset-icon">Put it back</span>
+      </button>
+
+      <button class="mode3-equals" id="mode3-equals">=</button>
+
+    </div>
+    </div>
+    <!-- end mode 3 screen -->
 
     <div id="too-big-message">Woah, that Numberblock is too big for this game!</div>
 

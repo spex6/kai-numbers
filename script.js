@@ -1104,3 +1104,508 @@ document.getElementById("toggle-write").addEventListener("click", function () {
   // clear everything
   clearInk();
 });
+
+// ================= MODE 3 (ADDITION) =================
+// Block scale is dynamic: it shrinks as columns are added so everything
+// still fits. Both sides always share one scale.
+let MODE3_SCALE = 38;
+const MODE3_SCALE_MAX = 38;
+const MODE3_SCALE_MIN = 10;
+const MODE3_COL_PAD = 36;   // 18px each side, matches the CSS
+const MODE3_COL_GAP = 12;   // gap between columns, matches the CSS
+
+const mode3State = {
+  left:  { hundreds: 0, tens: 3, units: 6 },
+  right: { hundreds: 0, tens: 5, units: 8 }
+};
+
+let mode3Original = { left: 36, right: 58 };
+
+let mode3Start = {
+  left:  { hundreds: 0, tens: 3, units: 6 },
+  right: { hundreds: 0, tens: 5, units: 8 }
+};
+
+// toggle setting: 2 or 3. Applies from the NEXT shuffle onwards.
+let mode3DigitSetting = 2;
+
+// was a 3-digit number present in the ORIGINAL shuffled problem?
+// Fixed at shuffle time; decides whether tens may ever be moved this problem.
+let mode3ProblemHas3Digit = false;
+
+// once a place has fused, it locks for BOTH sides for the rest of the problem
+let mode3Locks = { units: false, tens: false };
+
+let mode3Animating = false;
+
+// ---- block builders at MODE3_SCALE ----
+function makeUnit3() {
+  const b = document.createElement("div");
+  b.className = "block-1";
+  b.style.width = MODE3_SCALE + "px";
+  b.style.height = MODE3_SCALE + "px";
+  return b;
+}
+function makeTen3() {
+  const b = document.createElement("div");
+  b.className = "block-10";
+  for (let i = 0; i < 10; i++) {
+    const c = document.createElement("div");
+    c.className = "ten-cell";
+    c.style.width = MODE3_SCALE + "px";
+    c.style.height = MODE3_SCALE + "px";
+    b.appendChild(c);
+  }
+  return b;
+}
+function makeHundred3() {
+  const b = document.createElement("div");
+  b.className = "block-100";
+  b.style.gridTemplateColumns = "repeat(10, " + MODE3_SCALE + "px)";
+  b.style.gridTemplateRows = "repeat(10, " + MODE3_SCALE + "px)";
+  for (let r = 0; r < 10; r++) {
+    for (let c = 0; c < 10; c++) {
+      const cell = document.createElement("div");
+      let cls = "hcell " + ((r + c) % 2 === 0 ? "dark" : "light");
+      if (c === 9) cls += " last-col";
+      if (r === 9) cls += " last-row";
+      cell.className = cls;
+      b.appendChild(cell);
+    }
+  }
+  return b;
+}
+
+// ten units about to fuse: show them in the single-ten's colours
+function colourUnitAsTen(blk) {
+  blk.style.backgroundColor = "#fff";
+  blk.style.border = "1.5px solid #DE151D";
+}
+
+function mode3Total(side) {
+  const s = mode3State[side];
+  return s.hundreds * 100 + s.tens * 10 + s.units;
+}
+function mode3OtherSide(side) {
+  return side === "left" ? "right" : "left";
+}
+
+// ---- what may be moved ----
+// hundreds: never.
+// units: unless already fused this problem.
+// tens: only if the original problem contained a 3-digit number, and not yet fused.
+function mode3CanTransfer(place) {
+  if (place === "hundreds") return false;
+  if (place === "units") return !mode3Locks.units;
+  if (place === "tens") return mode3ProblemHas3Digit && !mode3Locks.tens;
+  return false;
+}
+
+// ---- dynamic scale ----
+// hundreds render as a receding staircase: 10 + (n-1) cells wide, not 10n
+function mode3CellsWide(side) {
+  const s = mode3State[side];
+  let cells = 0;
+  if (s.hundreds > 0) cells += 10 + (s.hundreds - 1);
+  cells += Math.max(s.tens, 1);
+  cells += 1;
+  return cells;
+}
+function mode3CellsTall(side) {
+  const s = mode3State[side];
+  if (s.hundreds > 0) return 10 + (s.hundreds - 1);
+  return 10;
+}
+function mode3FixedWidth(side) {
+  const cols = (mode3State[side].hundreds > 0) ? 3 : 2;
+  return cols * MODE3_COL_PAD + (cols - 1) * MODE3_COL_GAP;
+}
+
+function mode3RecalcScale() {
+  const row = document.querySelector("#screen-mode3 .mode3-row");
+  if (!row || row.clientWidth === 0) return;
+
+  const middle = 110;
+  const avail = row.clientWidth - middle - 80;
+  const cells = mode3CellsWide("left") + mode3CellsWide("right");
+  const fixed = mode3FixedWidth("left") + mode3FixedWidth("right");
+  const byWidth = Math.floor((avail - fixed) / Math.max(cells, 1));
+
+  const tallest = Math.max(mode3CellsTall("left"), mode3CellsTall("right"));
+  const byHeight = Math.floor((row.clientHeight - 40) / tallest);
+
+  let s = Math.min(byWidth, byHeight, MODE3_SCALE_MAX);
+  if (s < MODE3_SCALE_MIN) s = MODE3_SCALE_MIN;
+  MODE3_SCALE = s;
+}
+
+function mode3ApplyColumns() {
+  ["left", "right"].forEach(function (side) {
+    const root = document.getElementById("mode3-group-" + side);
+    const hCol = root.querySelector(".column-hundreds");
+    const s = mode3State[side];
+    if (s.hundreds > 0) {
+      const w = 10 * MODE3_SCALE + (s.hundreds - 1) * MODE3_SCALE + MODE3_COL_PAD;
+      hCol.style.width = w + "px";
+      hCol.classList.add("mode3-col-open");
+    } else {
+      hCol.style.width = "0px";
+      hCol.classList.remove("mode3-col-open");
+    }
+  });
+}
+
+// dim the columns that can no longer be moved
+function mode3ApplyLocks() {
+  ["left", "right"].forEach(function (side) {
+    const root = document.getElementById("mode3-group-" + side);
+    ["units", "tens"].forEach(function (place) {
+      const col = root.querySelector(".column-" + place);
+      if (mode3CanTransfer(place)) col.classList.remove("mode3-locked");
+      else col.classList.add("mode3-locked");
+    });
+  });
+}
+
+// ---- render ----
+function renderMode3Group(side, arriving) {
+  const s = mode3State[side];
+  const root = document.getElementById("mode3-group-" + side);
+  const popClass = (arriving && arriving.pop) ? "mode3-pop" : "mode3-arriving";
+
+  const unitsStage = root.querySelector(".column-units .column-stage");
+  unitsStage.innerHTML = "";
+  const stack = document.createElement("div");
+  stack.className = "unit-stack";
+  for (let i = 0; i < s.units; i++) {
+    const blk = makeUnit3();
+    if (s.units >= 10) colourUnitAsTen(blk);
+    else if (s.units === 9) colourNineUnit(blk, i);
+    else if (s.units === 7) colourSevenUnit(blk, i);
+    else colourUnit(blk, s.units);
+    stack.appendChild(blk);
+  }
+  unitsStage.appendChild(stack);
+  if (arriving && arriving.place === "units" && stack.lastElementChild) {
+    stack.lastElementChild.classList.add(popClass);
+  }
+
+  const tensStage = root.querySelector(".column-tens .column-stage");
+  tensStage.innerHTML = "";
+  const tensRow = document.createElement("div");
+  tensRow.className = "ten-row";
+  for (let i = 0; i < s.tens; i++) {
+    const blk = makeTen3();
+    if (s.tens === 9) colourNineTen(blk, i);
+    else if (s.tens === 7) colourSevenTen(blk, i);
+    else colourTen(blk, s.tens, s.tens);
+    tensRow.appendChild(blk);
+  }
+  tensStage.appendChild(tensRow);
+  if (arriving && arriving.place === "tens" && tensRow.lastElementChild) {
+    tensRow.lastElementChild.classList.add(popClass);
+  }
+
+  // hundreds: receding staircase, as Build mode does
+  const hStage = root.querySelector(".column-hundreds .column-stage");
+  hStage.innerHTML = "";
+  const stair = document.createElement("div");
+  stair.className = "hundred-stair";
+  const step = MODE3_SCALE;
+  for (let i = 0; i < s.hundreds; i++) {
+    const blk = makeHundred3();
+    if (s.hundreds === 9) colourNineHundred(blk, i);
+    else if (s.hundreds === 7) colourSevenHundred(blk, i);
+    else colourHundred(blk, s.hundreds);
+    blk.style.position = "absolute";
+    blk.style.left = (i * step) + "px";
+    blk.style.bottom = (i * step) + "px";
+    blk.style.zIndex = (s.hundreds - i);
+    if (arriving && arriving.place === "hundreds" && i === s.hundreds - 1) {
+      blk.classList.add(popClass);
+    }
+    stair.appendChild(blk);
+  }
+  const span = 10 * MODE3_SCALE + (s.hundreds > 0 ? (s.hundreds - 1) * step : 0);
+  stair.style.width = span + "px";
+  stair.style.height = span + "px";
+  hStage.appendChild(stair);
+
+  document.getElementById("mode3-numeral-" + side).textContent = mode3Total(side);
+}
+
+function renderMode3Sentence() {
+  document.getElementById("mode3-sentence").textContent =
+    mode3Original.left + " + " + mode3Original.right;
+}
+
+function renderMode3() {
+  mode3RecalcScale();
+  renderMode3Group("left");
+  renderMode3Group("right");
+  mode3ApplyColumns();
+  mode3ApplyLocks();
+  renderMode3Sentence();
+}
+
+// ---- touched / baseline ----
+function mode3Touched() {
+  return ["left","right"].some(function (side) {
+    return mode3State[side].hundreds !== mode3Start[side].hundreds ||
+           mode3State[side].tens     !== mode3Start[side].tens ||
+           mode3State[side].units    !== mode3Start[side].units;
+  });
+}
+function mode3SaveStart() {
+  mode3Start = {
+    left:  Object.assign({}, mode3State.left),
+    right: Object.assign({}, mode3State.right)
+  };
+}
+
+// ---- fuse ----
+function mode3RunFuse(side, fromPlace) {
+  const toPlace = (fromPlace === "units") ? "tens" : "hundreds";
+  mode3Animating = true;
+
+  const root = document.getElementById("mode3-group-" + side);
+  const fromStage = root.querySelector(".column-" + fromPlace + " .column-stage");
+
+  setTimeout(function () {
+    const blocks = fromStage.querySelectorAll(".block-1, .block-10");
+    blocks.forEach(function (b) {
+      b.classList.remove("mode3-pop", "mode3-arriving");
+      b.style.animationDelay = "";
+      void b.offsetWidth;
+      b.classList.add("mode3-fusing");
+    });
+
+    setTimeout(function () {
+      mode3State[side][fromPlace] -= 10;
+      mode3State[side][toPlace] += 1;
+      mode3Locks[fromPlace] = true;   // that place is done for this problem
+
+      mode3RecalcScale();
+      renderMode3Group(side, { place: toPlace, pop: true });
+      renderMode3Group(mode3OtherSide(side));
+      mode3ApplyColumns();
+      mode3ApplyLocks();
+
+      setTimeout(function () {
+        if (toPlace === "tens" && mode3State[side].tens >= 10) {
+          mode3RunFuse(side, "tens");
+        } else {
+          mode3Animating = false;
+        }
+      }, 630);
+
+    }, 840);
+
+  }, 800);
+}
+
+// ---- transfers ----
+const MODE3_HIT_PAD = 34;
+const MODE3_SLIP = 10;
+
+function mode3TapOnBlocks(stage, x, y) {
+  const inner = stage.firstElementChild;
+  if (!inner) return false;
+  const r = inner.getBoundingClientRect();
+  if (r.width === 0 || r.height === 0) return false;
+  return x >= r.left - MODE3_HIT_PAD && x <= r.right + MODE3_HIT_PAD &&
+         y >= r.top - MODE3_HIT_PAD && y <= r.bottom + MODE3_HIT_PAD;
+}
+
+function mode3Transfer(fromSide, place) {
+  if (mode3Animating) return;
+  if (!mode3CanTransfer(place)) return;
+  const from = mode3State[fromSide];
+  if (from[place] === 0) return;
+  const toSide = mode3OtherSide(fromSide);
+
+  mode3Animating = true;
+
+  const fromRoot = document.getElementById("mode3-group-" + fromSide);
+  const fromStage = fromRoot.querySelector(".column-" + place + " .column-stage");
+  const inner = fromStage.firstElementChild;
+  const leaving = inner ? inner.lastElementChild : null;
+  if (leaving) leaving.classList.add("mode3-leaving");
+
+  setTimeout(function () {
+    mode3State[fromSide][place] -= 1;
+    mode3RecalcScale();
+    renderMode3Group(fromSide);
+    mode3ApplyColumns();
+
+    setTimeout(function () {
+      mode3State[toSide][place] += 1;
+      mode3RecalcScale();
+      renderMode3Group(toSide, { place: place });
+      renderMode3Group(fromSide);
+      mode3ApplyColumns();
+      mode3ApplyLocks();
+
+      setTimeout(function () {
+        if (mode3State[toSide].units >= 10) {
+          mode3RunFuse(toSide, "units");
+        } else if (mode3State[toSide].tens >= 10) {
+          mode3RunFuse(toSide, "tens");
+        } else {
+          mode3Animating = false;
+        }
+      }, 300);
+
+    }, 140);
+
+  }, 220);
+}
+
+["left", "right"].forEach(function (side) {
+  const root = document.getElementById("mode3-group-" + side);
+  ["hundreds", "tens", "units"].forEach(function (place) {
+    const panel = root.querySelector(".column-" + place);
+    const stage = panel.querySelector(".column-stage");
+    let downX = 0, downY = 0, downOk = false;
+
+    panel.addEventListener("pointerdown", function (e) {
+      downX = e.clientX; downY = e.clientY;
+      downOk = mode3TapOnBlocks(stage, e.clientX, e.clientY);
+    });
+
+    panel.addEventListener("pointerup", function (e) {
+      if (!downOk) return;
+      downOk = false;
+      if (Math.hypot(e.clientX - downX, e.clientY - downY) > MODE3_SLIP) return;
+      mode3Transfer(side, place);
+    });
+  });
+});
+
+// ---- shuffle ----
+// bias: probability the pair's units sum to >= 10 (i.e. needs regrouping)
+function mode3Shuffle(bias) {
+  if (typeof bias !== "number") bias = 0.7;
+  const wantCarry = Math.random() < bias;
+  const threeDigit = (mode3DigitSetting === 3);
+  let a, b, guard = 0;
+
+  do {
+    if (threeDigit) {
+      // at least one side is 3-digit, otherwise the toggle does nothing
+      if (Math.random() < 0.5) {
+        a = 100 + Math.floor(Math.random() * 900);
+        b = 1 + Math.floor(Math.random() * 999);
+      } else {
+        a = 1 + Math.floor(Math.random() * 999);
+        b = 100 + Math.floor(Math.random() * 900);
+      }
+    } else {
+      a = 1 + Math.floor(Math.random() * 99);
+      b = 1 + Math.floor(Math.random() * 99);
+    }
+    guard++;
+  } while (guard < 500 && (
+    a + b >= 1000 ||
+    wantCarry !== (((a % 10) + (b % 10)) >= 10)
+  ));
+
+  mode3State.left  = { hundreds: Math.floor(a / 100), tens: Math.floor(a / 10) % 10, units: a % 10 };
+  mode3State.right = { hundreds: Math.floor(b / 100), tens: Math.floor(b / 10) % 10, units: b % 10 };
+  mode3Original.left = a;
+  mode3Original.right = b;
+
+  mode3ProblemHas3Digit = (a >= 100 || b >= 100);
+  mode3Locks = { units: false, tens: false };
+
+  renderMode3();
+  mode3SaveStart();
+}
+
+// ---- digit-size toggle: applies from the NEXT shuffle ----
+document.getElementById("mode3-toggle").addEventListener("click", function () {
+  if (mode3Animating) return;
+  mode3DigitSetting = (mode3DigitSetting === 2) ? 3 : 2;
+  this.classList.toggle("three", mode3DigitSetting === 3);
+});
+
+// ---- shuffle button: instant if untouched, hold-to-confirm once he has moved blocks ----
+(function setupMode3Shuffle() {
+  const btn = document.getElementById("mode3-shuffle");
+  let holdTimer = null;
+
+  function startHold() {
+    if (mode3Animating) return;
+    if (!mode3Touched()) { mode3Shuffle(0.7); return; }
+    btn.classList.add("holding");
+    holdTimer = setTimeout(function () {
+      mode3Shuffle(0.7);
+      btn.classList.remove("holding");
+    }, 750);
+  }
+  function cancelHold() {
+    btn.classList.remove("holding");
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  }
+
+  btn.addEventListener("mousedown", startHold);
+  btn.addEventListener("mouseup", cancelHold);
+  btn.addEventListener("mouseleave", cancelHold);
+  btn.addEventListener("touchstart", function (e) { e.preventDefault(); startHold(); });
+  btn.addEventListener("touchend", cancelHold);
+  btn.addEventListener("touchcancel", cancelHold);
+})();
+
+// ---- put it back: restores the starting arrangement AND clears the locks ----
+(function setupMode3PutBack() {
+  const btn = document.getElementById("mode3-putback");
+  let holdTimer = null;
+
+  function startHold() {
+    if (mode3Animating) return;
+    btn.classList.add("holding");
+    holdTimer = setTimeout(function () {
+      mode3State.left  = Object.assign({}, mode3Start.left);
+      mode3State.right = Object.assign({}, mode3Start.right);
+      mode3Locks = { units: false, tens: false };
+      renderMode3();
+      btn.classList.remove("holding");
+    }, 375);
+  }
+  function cancelHold() {
+    btn.classList.remove("holding");
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  }
+
+  btn.addEventListener("mousedown", startHold);
+  btn.addEventListener("mouseup", cancelHold);
+  btn.addEventListener("mouseleave", cancelHold);
+  btn.addEventListener("touchstart", function (e) { e.preventDefault(); startHold(); });
+  btn.addEventListener("touchend", cancelHold);
+  btn.addEventListener("touchcancel", cancelHold);
+})();
+
+// ---- swap: swaps the CURRENT arrangement, not the original sentence ----
+document.getElementById("mode3-swap").addEventListener("click", function () {
+  if (mode3Animating) return;
+  const tmp = mode3State.left;
+  mode3State.left = mode3State.right;
+  mode3State.right = tmp;
+  renderMode3();
+});
+
+// ---- navigation ----
+document.getElementById("tile-mode3").addEventListener("click", function () {
+  showScreen("screen-mode3");
+  mode3Shuffle(1);      // opening problem always needs regrouping
+});
+document.getElementById("back-mode3").addEventListener("click", function () {
+  if (mode3Animating) return;
+  showScreen("screen-menu");
+});
+
+window.addEventListener("resize", function () {
+  if (document.getElementById("screen-mode3").classList.contains("active")) {
+    renderMode3();
+  }
+});

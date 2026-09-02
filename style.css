@@ -528,3 +528,258 @@ body {
   width: auto;
   display: block;
 }
+
+/* ================= MODE 3 (ADDITION) — STATIC LAYOUT ================= */
+.mode3-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 24px;
+}
+
+.mode3-sentence {
+  font-size: 32px;
+  font-weight: bold;
+  color: #444;
+  margin-bottom: 24px;
+}
+
+.mode3-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+.mode3-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+}
+
+.mode3-columns {
+  flex: 1;
+  gap: 12px;
+  min-height: 0;
+}
+.mode3-columns .column-stage {
+  padding-bottom: 4px;
+}
+/* columns size to their blocks, with breathing room */
+.mode3-columns .column-tens  { flex: 0 0 auto; min-width: 0; padding: 8px 18px; }
+.mode3-columns .column-units { flex: 0 0 auto; min-width: 0; padding: 8px 18px; }
+
+/* hundreds column: absent by default, grows in when a side reaches 100 */
+.mode3-columns .column-hundreds {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 0;
+  padding: 8px 0;
+  border-width: 0;
+  overflow: hidden;
+  transition: width 0.35s ease, padding 0.35s ease;
+}
+.mode3-columns .column-hundreds.mode3-col-open {
+  padding: 8px 18px;
+  border-width: 2px;
+  cursor: pointer;
+}
+
+.mode3-numeral {
+  font-size: 40px;
+  font-weight: bold;
+  color: #222;
+}
+
+.mode3-plus {
+  font-size: 48px;
+  font-weight: bold;
+  color: #444;
+}
+
+.mode3-equals {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 72px;
+  font-size: 32px;
+  font-weight: bold;
+  border: 3px solid rgba(255,255,255,0.8);
+  border-radius: 22px;
+  background: rgba(255,255,255,0.55);
+  color: #444;
+  cursor: pointer;
+}
+.mode3-equals:active { transform: translateX(-50%) scale(0.96); }
+
+/* ---- mode 3 stage 2: arrows, shuffle, swap ---- */
+.mode3-shuffle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 72px;
+  height: 72px;
+  font-size: 34px;
+  border: 4px solid #5B2E91;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.75);
+  cursor: pointer;
+  z-index: 100;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: absolute;
+}
+.mode3-shuffle .reset-fill { background: #5B2E91; }
+.mode3-shuffle.holding .reset-fill {
+  height: 100%;
+  transition: height 0.75s linear;
+}
+
+.mode3-shuffle:active { transform: scale(0.94); }
+
+.mode3-middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.mode3-swap {
+  width: 56px;
+  height: 48px;
+  font-size: 26px;
+  border: 3px solid rgba(255,255,255,0.8);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.55);
+  color: #444;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+.mode3-swap:active { transform: scale(0.95); }
+
+/* ---- mode 3 stage 3: transfers ---- */
+.mode3-columns .column-tens,
+.mode3-columns .column-units {
+  cursor: pointer;
+}
+
+.mode3-leaving {
+  animation: mode3-leaving 0.22s ease-in forwards;
+}
+@keyframes mode3-leaving {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.3); opacity: 0; }
+}
+
+.mode3-arriving {
+  animation: mode3-arriving 0.3s cubic-bezier(0.34, 1.6, 0.5, 1) both;
+}
+@keyframes mode3-arriving {
+  0%   { transform: scale(0.3); opacity: 0; }
+  70%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---- mode 3 stage 4: fuse (Build mode's look, ~30% quicker) ---- */
+.mode3-fusing {
+  animation: fuse-charge 0.7s ease-in-out;
+  animation-delay: 0.14s;
+}
+.mode3-pop {
+  animation: transform-pop 0.42s cubic-bezier(0.34, 1.7, 0.5, 1);
+}
+
+/* ---- mode 3 stage 5: put it back ---- */
+.mode3-putback {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 150px;
+  height: 56px;
+  border: 3px solid rgba(255,255,255,0.8);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.55);
+  color: #444;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 100;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mode3-putback .reset-fill { background: #3DA43A; }
+.mode3-putback.holding .reset-fill {
+  height: 100%;
+  transition: height 0.375s linear;
+}
+.mode3-putback:active { transform: scale(0.97); }
+
+/* ---- mode 3: digit-size toggle ---- */
+.mode3-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+.mode3-toggle {
+  position: relative;
+  width: 132px;
+  height: 52px;
+  border: 3px solid rgba(255,255,255,0.85);
+  border-radius: 26px;
+  background: #9EC98A;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+.mode3-toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 60px;
+  height: 40px;
+  border-radius: 20px;
+  background: #fff;
+  transition: left 0.25s ease;
+  z-index: 1;
+}
+.mode3-toggle.three .mode3-toggle-knob { left: 63px; }
+.mode3-toggle-label {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  z-index: 2;
+  line-height: 1;
+}
+/* whichever label the white knob is sitting under goes dark, so it stays readable */
+.mode3-toggle:not(.three) .lbl-two   { color: #333; }
+.mode3-toggle.three       .lbl-three { color: #333; }
+
+/* locked place: dimmed and desaturated so it clearly can't be moved */
+.mode3-columns .column.mode3-locked .column-stage {
+  opacity: 0.7;
+  filter: grayscale(0.15);
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+.mode3-columns .column.mode3-locked {
+  cursor: default;
+}
